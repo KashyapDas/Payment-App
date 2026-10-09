@@ -1,6 +1,6 @@
 const {userSignUpSchema} = require("../zod/zodSchema");
 
-function validate(req,res,next){
+function signupMiddleware(req,res,next){
     const userBody = req.body;
     const {success} = userSignUpSchema.safeParse(userBody);
     if(!success){
@@ -12,4 +12,4 @@ function validate(req,res,next){
 }
 
 
-module.exports = validate;
+module.exports = signupMiddleware;
