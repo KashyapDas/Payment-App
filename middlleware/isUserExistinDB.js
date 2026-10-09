@@ -1,4 +1,4 @@
-const userExists = require("../utils/userExists");
+const userExists = require("../utils/signUpuserExists");
 
 async function isExist(req,res,next){
     const result = await userExists(req.body.email, req.body.username);

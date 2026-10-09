@@ -1,4 +1,4 @@
-const userSignUpSchema = require("../zod/userSignUpSchema");
+const {userSignUpSchema} = require("../zod/zodSchema");
 
 function validate(req,res,next){
     const userBody = req.body;
