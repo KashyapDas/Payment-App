@@ -45,30 +45,35 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
 
     res.json({
         msg : "user created successfully",
-        token
+        token : "Bearer" + " " + token
     });
 })
 
 // This route allow us to enter the webiste if the user is already exits.
 router.post("/signin",signinSchemaValidate,async (req,res)=>{
     const tokenId = req.headers && req.headers.authorization;
-    // if token exist then do re-direct
-    if(tokenId){
-        const tokenDecoded = jwt.verify(tokenId, process.env.JWT_SECRET);
-        if(!tokenDecoded.id){
-            return res.json({ msg : "Something went wrong"});
-        }
-        // check if the user exist or not
-        const userExist = await userModel.findById({
-            _id : tokenDecoded.id
-        })
 
-        if(!userExist) res.json({ msg : "user not exists"}); 
-        
-        return res.json({
-            msg : "Allow to access the website"
-        });        
+    if(tokenId){
+        const originalToken = tokenId.split(" ")[1];
+        if(originalToken){
+            const tokenDecoded = jwt.verify(originalToken, process.env.JWT_SECRET);
+            if(!tokenDecoded.id){
+                return res.json({ msg : "Something went wrong"});
+            }
+            // check if the user exist or not
+            const userExist = await userModel.findById({
+                _id : tokenDecoded.id
+            })
+
+            if(!userExist) res.json({ msg : "user not exists"}); 
+            
+            return res.json({
+                msg : "User signin successfully"
+            });        
+        }
     }
+
+    
     // if token not exists
     const { firstfield, lastfield } = req.body;
 
@@ -83,8 +88,8 @@ router.post("/signin",signinSchemaValidate,async (req,res)=>{
     }, process.env.JWT_SECRET);
 
     res.json({
-        msg : "User exists",
-        token
+        msg : "User signin successfully",
+        token : "Bearer" + " " + token
     });
 })
 
@@ -103,6 +108,19 @@ router.put("/forgot-password",async (req,res)=>{
     res.json({
         msg : "password changed successfully"
     });
+})
+
+// this is an open route that is accessed for all
+router.get("/bulk",async (req,res)=>{
+    const filter = req.query.filter || "";
+    const users = await userModel.find({
+        username : {
+            "$regex" : filter
+        }
+    });
+    res.json({
+        user : users
+    }); 
 })
 
 
