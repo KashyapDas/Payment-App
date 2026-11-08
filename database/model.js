@@ -27,12 +27,29 @@ const accountSchema = new mongoose.Schema({
     }
 })
 
+const transactionHistory = new mongoose.Schema({
+    fromAccount : {
+        type : mongoose.Schema.Types.ObjectId,
+        required : true
+    },
+    toAccount : {
+        type : mongoose.Schema.Types.ObjectId,
+        required : true
+    },
+    balanceTransfer : {
+        type : Number,
+        required : true
+    }
+});
+
 const userModel = mongoose.model("users",userSchema);
 const accountModel = mongoose.model("accounts",accountSchema);
+const transactionModel = mongoose.model("moneyhistories",transactionHistory);
 
 module.exports = {
     userModel,
-    accountModel
+    accountModel,
+    transactionModel
 };
 
 
