@@ -8,10 +8,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-(async function establishedConnextion() {
-    await connectDatabase();
-})();
+
 
 app.use("/api/v1",mainRouter);
 
-app.listen(3000,()=>console.log("Server started successfully..."));
+app.listen(3000,async ()=>{
+    await connectDatabase();
+    console.log("server started successfully...");
+});

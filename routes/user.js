@@ -1,51 +1,91 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const signupMiddleware = require("../middlleware/signupMiddleware");
-const isExist = require("../middlleware/isUserExistinDB");
-const isExist2 = require("../middlleware/isUserExistinDBSingIn");
-const { userModel } = require("../database/model");
-const signInMiddleware = require("../middlleware/signInMiddleware");
-
 const router = express.Router();
+const {signupSchemaValidate, signinSchemaValidate} = require("../middlleware/zodMiddleware");
+const { isUserExists } = require("../utils/isUserExists");
+const { userModel, accountModel} = require("../database/model");
+const { isUserExists2 } = require("../utils/isUserExists2");
+
+
 require("dotenv").config();
 
+// this route allow us to create account if the acc is not already exists.
+router.post("/signup",signupSchemaValidate,async (req,res)=>{
 
-router.post("/signup",signupMiddleware,isExist,async (req,res)=>{
-    const userBody = req.body;
-    const createUser = await userModel.create({
-        username : userBody.username, 
-        email : userBody.email, 
-        password : userBody.password
+    const {email, username, password } = req.body;
+    // check if the user exists ot not
+    const { isExist } = await isUserExists(email, username);
+    if(isExist){
+        return res.json({
+            msg : "User already exists"
+        });
+    }
+    // here line comes means not exists -> create user, account, token id
+    const user = await userModel.create({
+        email, username, password 
     });
+
+    if(!user){
+        return res.json({ msg : "Something went wrong"})
+    }
+
+    const account = await accountModel.create({
+        userId : user._id,
+        balance : 1000
+    });
+
+    if(!account){
+        return res.json({ msg : "Something went wrong"});
+    }
     
-    // if not then create the jwt token
     const token = jwt.sign({
-        userId : createUser._id
-    }, process.env.JWT_SECRET)
+        id : user._id
+    }, process.env.JWT_SECRET);
+
 
     res.json({
-        msg : "Signup successfull...",
-        token : token
+        msg : "user created successfully",
+        token
     });
 })
 
-router.post("/signin",signInMiddleware,isExist2,async (req,res)=>{
-    // check the schema using zod - accept(username/email, password)
-    // check if user exist, if yes then processed, and if not then donot processed
-    // if yes then create an token and processed
-    const {email, username, password} = req.body;
-    const result = await userModel.findOne({
-        ...(email ? { email } : { username }),
-        password
-    });
+// This route allow us to enter the webiste if the user is already exits.
+router.post("/signin",signinSchemaValidate,async (req,res)=>{
+    const tokenId = req.headers && req.headers.authorization;
+    // if token exist then do re-direct
+    if(tokenId){
+        const tokenDecoded = jwt.verify(tokenId, process.env.JWT_SECRET);
+        if(!tokenDecoded.id){
+            return res.json({ msg : "Something went wrong"});
+        }
+        // check if the user exist or not
+        const userExist = await userModel.findById({
+            _id : tokenDecoded.id
+        })
+
+        if(!userExist) res.json({ msg : "user not exists"}); 
+        
+        return res.json({
+            msg : "Allow to access the website"
+        });        
+    }
+    // if token not exists
+    const { firstfield, lastfield } = req.body;
+
+    // check if the user exists ot not
+    const { isExist, id } = await isUserExists2(firstfield, lastfield);
+    if(isExist === false){
+        return res.json({ msg : "User not exists"});
+    }
+    // else exist and create the token
     const token = jwt.sign({
-        userId : result._id
+        id
     }, process.env.JWT_SECRET);
-    
-    res.status(200).json({
-        msg : "login successfull",
-        token 
-    })
+
+    res.json({
+        msg : "User exists",
+        token
+    });
 })
 
 

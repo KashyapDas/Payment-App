@@ -1,25 +1,19 @@
-const {z} = require("zod");
+const { z } = require("zod");
 
-
-const userSignUpSchema = z.object({
-    username : z.string(),
-    password : z.string(),
-    email : z.email()
+const signupSchema = z.object({
+  email : z.email(),
+  username : z.string().min(1),
+  password : z.string().min(6)
 }).strict();
 
 
-const userSignInSchema = z
-  .object({
-    username: z.string().optional(),
-    email: z.string().email().optional(),
-    password: z.string(),
-  })
-  .refine(
-    (data) => Boolean(data.username) !== Boolean(data.email),
-    {
-      message: "Provide either username or email, not both",
-    }
-  );
+const signinSchema = z.object({
+  firstfield : z.string().min(1),
+  lastfield : z.string().min(6),
+}).strict();
 
 
-module.exports = {userSignUpSchema, userSignInSchema};
+module.exports = {
+  signupSchema,
+  signinSchema
+};
