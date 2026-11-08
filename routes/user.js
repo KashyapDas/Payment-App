@@ -88,5 +88,23 @@ router.post("/signin",signinSchemaValidate,async (req,res)=>{
     });
 })
 
+// This route allow us to send an otp to the email 
+router.put("/forgot-password",async (req,res)=>{
+    // get the email,
+    const { email, username, password } = req.body;
+    const result = await userModel.findOne({ email, username });
+
+    if(!result) res.json({ msg : "Something went wrong"});
+    
+    const passChanged = await userModel.updateOne({email, username}, { password });
+
+    if(!passChanged) res.json({ msg : "Something went wrong"});
+    
+    res.json({
+        msg : "password changed successfully"
+    });
+})
+
+
 
 module.exports = router;
