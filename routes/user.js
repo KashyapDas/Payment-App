@@ -62,34 +62,13 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
 
 // This route allow us to enter the webiste if the user is already exits.
 router.post("/signin",signinSchemaValidate,async (req,res)=>{
-    const tokenId = req.cookies && req.cookies.tokenId;
-
-    if(tokenId){
-        const originalToken = tokenId.split(" ")[1];
-        if(originalToken){
-            const tokenDecoded = jwt.verify(originalToken, process.env.JWT_SECRET);
-            if(!tokenDecoded.id){
-                return res.json({ msg : "Something went wrong"});
-            }
-            // check if the user exist or not
-            const userExist = await userModel.findById({
-                _id : tokenDecoded.id
-            })
-
-            if(!userExist) res.json({ msg : "user not exists"}); 
-            
-            return res.json({
-                msg : "User signin successfully"
-            });        
-        }
-    }
-    // if token not exists
+    
     const { firstfield, lastfield } = req.body;
 
     // check if the user exists ot not
     const { isExist, id } = await isUserExists2(firstfield, lastfield);
     if(isExist === false){
-        return res.json({ msg : "User not exists"});
+        return res.status(500).json({ msg : "User not exists"});
     }
     // else exist and create the token
     const token = jwt.sign({
