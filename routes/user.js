@@ -13,10 +13,10 @@ require("dotenv").config();
 router.post("/signup",signupSchemaValidate,async (req,res)=>{
 
     const {email, username, password } = req.body;
-    // check if the user exists ot not
+    // check if the user exists or not
     const { isExist } = await isUserExists(email, username);
     if(isExist){
-        return res.json({
+        return res.status(409).json({
             msg : "User already exists"
         });
     }
@@ -26,7 +26,7 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
     });
 
     if(!user){
-        return res.json({ msg : "Something went wrong"})
+        return res.status(500).json({ msg : "Something went wrong"})
     }
 
     const account = await accountModel.create({
@@ -35,23 +35,34 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
     });
 
     if(!account){
-        return res.json({ msg : "Something went wrong"});
+        return res.status(500).json({ msg : "Something went wrong"});
     }
     
     const token = jwt.sign({
         id : user._id
     }, process.env.JWT_SECRET);
 
+    const originalToken = "Bearer" + " " +token;
+
+    // set the token to the cookie
+    res.cookie("tokenId", originalToken, {
+        httpOnly: true,      // JavaScript can't read it (protects against XSS)
+        secure: true,        // only sent over HTTPS (use false only on localhost)
+        sameSite: "lax",     // helps protect against CSRF
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+        path: "/",           // available across the whole site
+    });
+
 
     res.json({
         msg : "user created successfully",
-        token : "Bearer" + " " + token
+        user : user.username
     });
 })
 
 // This route allow us to enter the webiste if the user is already exits.
 router.post("/signin",signinSchemaValidate,async (req,res)=>{
-    const tokenId = req.headers && req.headers.authorization;
+    const tokenId = req.cookies && req.cookies.tokenId;
 
     if(tokenId){
         const originalToken = tokenId.split(" ")[1];
@@ -72,8 +83,6 @@ router.post("/signin",signinSchemaValidate,async (req,res)=>{
             });        
         }
     }
-
-    
     // if token not exists
     const { firstfield, lastfield } = req.body;
 
@@ -86,6 +95,15 @@ router.post("/signin",signinSchemaValidate,async (req,res)=>{
     const token = jwt.sign({
         id
     }, process.env.JWT_SECRET);
+    const originalToken = "Bearer" + " " + token;
+
+    res.cookie("tokenId",originalToken,{
+        httpOnly : true,
+        secure : true,
+        sameSite : "lax",
+        maxAge : 7 * 24 * 60 * 60 * 1000,
+        path : "/"
+    });
 
     res.json({
         msg : "User signin successfully",

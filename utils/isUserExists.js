@@ -4,7 +4,7 @@ const { userModel } = require("../database/model");
 const isUserExists = async (email, username)=>{
     // check if the email and username exists or not
     const result = await userModel.findOne({
-        $and : [{ email}, {username}]
+        $or : [{ email}, {username}],
     });
     // console.log(result?._id); undefined
     return {
