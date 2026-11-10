@@ -8,7 +8,8 @@ const isUserExists2 = async (firstfield,lastfield)=>{
     });
     return {
         isExist : Boolean(result),
-        id : result?._id
+        id : result?._id,
+        username : result.username
     };
 }
 

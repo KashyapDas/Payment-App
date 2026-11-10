@@ -5,6 +5,7 @@ const {signupSchemaValidate, signinSchemaValidate} = require("../middlleware/zod
 const { isUserExists } = require("../utils/isUserExists");
 const { userModel, accountModel} = require("../database/model");
 const { isUserExists2 } = require("../utils/isUserExists2");
+const { authToken } = require("../middlleware/authToken");
 
 
 require("dotenv").config();
@@ -24,7 +25,7 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
     const user = await userModel.create({
         email, username, password 
     });
-
+    console.log("The signup user id will be : ",user.id);
     if(!user){
         return res.status(500).json({ msg : "Something went wrong"})
     }
@@ -43,11 +44,10 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
     }, process.env.JWT_SECRET);
 
     const originalToken = "Bearer" + " " +token;
-
     // set the token to the cookie
     res.cookie("tokenId", originalToken, {
         httpOnly: true,      // JavaScript can't read it (protects against XSS)
-        secure: true,        // only sent over HTTPS (use false only on localhost)
+        secure: false,        // only sent over HTTPS (use false only on localhost)
         sameSite: "lax",     // helps protect against CSRF
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
         path: "/",           // available across the whole site
@@ -56,7 +56,7 @@ router.post("/signup",signupSchemaValidate,async (req,res)=>{
 
     res.json({
         msg : "user created successfully",
-        user : user.username
+        username : user.username
     });
 })
 
@@ -66,7 +66,7 @@ router.post("/signin",signinSchemaValidate,async (req,res)=>{
     const { firstfield, lastfield } = req.body;
 
     // check if the user exists ot not
-    const { isExist, id } = await isUserExists2(firstfield, lastfield);
+    const { isExist, id, username } = await isUserExists2(firstfield, lastfield);
     if(isExist === false){
         return res.status(500).json({ msg : "User not exists"});
     }
@@ -86,7 +86,7 @@ router.post("/signin",signinSchemaValidate,async (req,res)=>{
 
     res.json({
         msg : "User signin successfully",
-        token : "Bearer" + " " + token
+        username
     });
 })
 
@@ -108,13 +108,23 @@ router.put("/forgot-password",async (req,res)=>{
 })
 
 // this is an open route that is accessed for all
-router.get("/bulk",async (req,res)=>{
+router.get("/bulk",authToken,async (req,res)=>{
+    
+
     const filter = req.query.filter || "";
+
+    if(filter.trim() === ""){
+        return res.json({
+            user : []
+        })
+    }
+
     const users = await userModel.find({
-        username : {
-            "$regex" : filter
-        }
-    });
+        _id: { $ne: req.clientUserId },
+        username: { $regex: filter, $options: "i" },
+    }).select("_id username");
+
+
     res.json({
         user : users
     }); 

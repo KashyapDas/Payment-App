@@ -36,12 +36,16 @@ router.post("/money-transaction",tokenVerification,amountVerification,async (req
     const fromAcc = await accountModel.findOne({
         userId : req.tokenId
     }).session(session);
-    if(!fromAcc || fromAcc.balance < amount){
+    if(!fromAcc){
         // abort the transaction if error occur
         await session.abortTransaction();
-        return res.json({
+        return res.status(500).json({
             msg : "Something went wrong"
         });
+    }
+    if(fromAcc.balance < amount){
+        await session.abortTransaction();
+        return res.status(201).json("Insufficient ammount");
     }
 
     const toAcc = await accountModel.findOne({
@@ -49,7 +53,7 @@ router.post("/money-transaction",tokenVerification,amountVerification,async (req
     }).session(session);
     if(!toAcc){
         await session.abortTransaction();
-        return res.json({
+        return res.status(500).json({
             msg : "Something went wrong"
         });
     }
@@ -72,12 +76,12 @@ router.post("/money-transaction",tokenVerification,amountVerification,async (req
     })
     if(!moneyHistoriesResult){
         session.abortTransaction();
-        return res.json({ msg : "Something went wrong"});
+        return res.status(500).json({ msg : "Something went wrong"});
     }
     // commit the transaction
     session.commitTransaction();
     // save the transaction in the moneyHistories    
-    res.json({
+    res.status(200).json({
         msg : "Money transfered successfully"
     });
 })
