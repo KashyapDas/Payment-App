@@ -87,8 +87,19 @@ router.post("/money-transaction",tokenVerification,amountVerification,async (req
 })
 
 // this allow us to view the transaction history of a version
-router.post("/transaction-history",(req,res)=>{
+router.post("/transaction-history",tokenVerification,async (req,res)=>{
+    const userId = req.tokenId;
+    const result = await transactionModel.find({
+        fromAccount : userId
+    }).populate("fromAccount", "username").populate("toAccount", "username")
 
+
+    if(!result) return res.status(500).json({ msg : "Server is down...Try again later"});
+
+    res.status(200).json({
+        msg : "Transaction fetched successsfully",
+        result
+    });
 })
 
 module.exports = router;

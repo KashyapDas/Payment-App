@@ -30,10 +30,12 @@ const accountSchema = new mongoose.Schema({
 const transactionHistory = new mongoose.Schema({
     fromAccount : {
         type : mongoose.Schema.Types.ObjectId,
+        ref : "users",
         required : true
     },
     toAccount : {
         type : mongoose.Schema.Types.ObjectId,
+        ref : "users",
         required : true
     },
     balanceTransfer : {
